@@ -16,13 +16,13 @@ func NewSpiderApi() *SpiderApi {
 	return &SpiderApi{}
 }
 
-func (this *SpiderApi) Publish(article *SpiderArticle) (articleId int64, err error) {
+func (api *SpiderApi) Publish(article *Article) (articleId int64, err error) {
 	if article.Summary == "" {
 		article.Summary = common.GetSummary(article.ContentType, article.Content)
 	}
 
 	if len(article.Tags) == 0 {
-		article.Tags = this.AnalyzeTags(article)
+		article.Tags = api.AnalyzeTags(article)
 	}
 
 	t, err := services.ArticleService.Publish(article.UserId, article.Title, article.Summary, article.Content,
@@ -31,13 +31,13 @@ func (this *SpiderApi) Publish(article *SpiderArticle) (articleId int64, err err
 		articleId = t.Id
 
 		if article.PublishTime > 0 {
-			services.ArticleService.UpdateColumn(articleId, "create_time", article.PublishTime)
+			_ = services.ArticleService.UpdateColumn(articleId, "create_time", article.PublishTime)
 		}
 	}
 	return
 }
 
-func (this *SpiderApi) PublishComment(comment *SpiderComment) (commentId int64, err error) {
+func (api *SpiderApi) PublishComment(comment *Comment) (commentId int64, err error) {
 	if len(comment.Content) == 0 {
 		err = errors.New("评论内容不能为空")
 		return
@@ -53,13 +53,13 @@ func (this *SpiderApi) PublishComment(comment *SpiderComment) (commentId int64, 
 		commentId = c.Id
 
 		if comment.PublishTime > 0 {
-			services.CommentService.UpdateColumn(commentId, "create_time", comment.PublishTime)
+			_ = services.CommentService.UpdateColumn(commentId, "create_time", comment.PublishTime)
 		}
 	}
 	return
 }
 
-func (this *SpiderApi) AnalyzeTags(article *SpiderArticle) []string {
+func (api *SpiderApi) AnalyzeTags(article *Article) []string {
 	var analyzeRet *baiduai.AiAnalyzeRet
 	if article.ContentType == model.ContentTypeMarkdown {
 		analyzeRet, _ = baiduai.GetAi().AnalyzeMarkdown(article.Title, article.Content)
@@ -76,7 +76,7 @@ func (this *SpiderApi) AnalyzeTags(article *SpiderArticle) []string {
 	return tags
 }
 
-type SpiderArticle struct {
+type Article struct {
 	UserId      int64    `json:"userId" form:"userId"` // 发布用户编号
 	Title       string   `json:"title" form:"title"`
 	Summary     string   `json:"summary" form:"summary"`
@@ -87,7 +87,7 @@ type SpiderArticle struct {
 	PublishTime int64    `json:"publishTime" form:"publishTime"`
 }
 
-type SpiderComment struct {
+type Comment struct {
 	UserId      int64  `json:"userId" form:"userId"`
 	Content     string `json:"content" form:"content"`
 	EntityType  string `json:"entityType" form:"entityType"`
